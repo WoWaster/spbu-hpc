@@ -2,7 +2,6 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
-#include <stdio.h>
 #include <stdlib.h>
 #include <vector>
 
@@ -14,12 +13,12 @@ std::default_random_engine re;
 double random_e() { return unif(re); }
 
 void generate(std::vector<double> *v, double (*__gen)()) {
-  for (int i = 0; i < v->size(); i++) {
+  for (std::vector<double>::size_type i = 0; i < v->size(); i++) {
     (*v)[i] = __gen();
   }
 }
 
-int main(int argc, char *argv[]) {
+int main() {
 
   re.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
@@ -68,7 +67,6 @@ int main(int argc, char *argv[]) {
         z2 += x[i] * y[i];
       }
     }
-    double z = z1 / z2;
 
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
@@ -90,3 +88,4 @@ int main(int argc, char *argv[]) {
     }
     return 0;
   }
+}
