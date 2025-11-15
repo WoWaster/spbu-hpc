@@ -17,45 +17,10 @@ void generate(std::vector<double> *v, double (*gen)()) {
   }
 }
 
-int main(int argc, char *argv[]) {
-
-  if (argc > 64)
-    throw std::runtime_error("too many input parameters!");
-
-  const std::vector<std::string> args(argv + 1, argv + argc);
-
-  int n = -1;
-  bool print_result = false;
-
-  // Not the best argument parser, I know
-  for (const auto &arg : args) {
-    if (arg == "--help") {
-      std::cout << "Usage: " << argv[0] << " [--help] [--print] n" << std::endl;
-      exit(EXIT_SUCCESS);
-    }
-    if (arg == "--print") {
-      print_result = true;
-      continue;
-    }
-    n = std::stoi(arg);
-  }
-
-  re.seed(std::chrono::system_clock::now().time_since_epoch().count());
-
-  std::vector<double> B(n * n);
-
-  std::vector<double> C(n * n);
+std::vector<double> calculate(int n, std::vector<double> &B,
+                              std::vector<double> &C, std::vector<double> &x,
+                              std::vector<double> &y) {
   std::vector<double> A(n * n);
-  std::vector<double> x(n);
-  std::vector<double> y(n);
-
-  generate(&B, random_e);
-  generate(&C, random_e);
-  generate(&x, random_e);
-  generate(&y, random_e);
-
-  std::chrono::system_clock::time_point start_time =
-      std::chrono::system_clock::now();
 
   // single column of C*E, where E is a vector of ones
   // thus CE is a vector of row sums of C
@@ -96,6 +61,49 @@ int main(int argc, char *argv[]) {
       A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z;
     }
   }
+
+  return A;
+}
+
+int main(int argc, char *argv[]) {
+
+  if (argc > 64)
+    throw std::runtime_error("too many input parameters!");
+
+  const std::vector<std::string> args(argv + 1, argv + argc);
+
+  int n = -1;
+  bool print_result = false;
+
+  // Not the best argument parser, I know
+  for (const auto &arg : args) {
+    if (arg == "--help") {
+      std::cout << "Usage: " << argv[0] << " [--help] [--print] n" << std::endl;
+      exit(EXIT_SUCCESS);
+    }
+    if (arg == "--print") {
+      print_result = true;
+      continue;
+    }
+    n = std::stoi(arg);
+  }
+
+  re.seed(std::chrono::system_clock::now().time_since_epoch().count());
+
+  std::vector<double> B(n * n);
+  std::vector<double> C(n * n);
+  std::vector<double> x(n);
+  std::vector<double> y(n);
+
+  generate(&B, random_e);
+  generate(&C, random_e);
+  generate(&x, random_e);
+  generate(&y, random_e);
+
+  std::chrono::system_clock::time_point start_time =
+      std::chrono::system_clock::now();
+
+  std::vector<double> A = calculate(n, B, C, x, y);
 
   std::chrono::milliseconds elapsed_milliseconds =
       std::chrono::duration_cast<std::chrono::milliseconds>(
