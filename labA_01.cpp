@@ -2,19 +2,18 @@
 #include <iomanip>
 #include <iostream>
 #include <random>
-#include <stdlib.h>
 #include <vector>
 
 double lower_bound = -1000.0;
 double upper_bound = 1000.0;
 std::uniform_real_distribution<double> unif(lower_bound, upper_bound);
-std::default_random_engine re;
+std::default_random_engine re; // NOLINT(cert-msc51-cpp)
 
 double random_e() { return unif(re); }
 
-void generate(std::vector<double> *v, double (*__gen)()) {
-  for (std::vector<double>::size_type i = 0; i < v->size(); i++) {
-    (*v)[i] = __gen();
+void generate(std::vector<double> *v, double (*gen)()) {
+  for (double &i : *v) {
+    i = gen();
   }
 }
 
