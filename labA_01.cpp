@@ -61,12 +61,18 @@ std::vector<double> calculate(int n, std::vector<double> &B,
       z2 += x[i] * y[i];
     }
 
+    double z = z1 / z2;
+
 #pragma omp for collapse(2)
     for (int i = 0; i < n; i++) {
-      // #pragma omp for
       for (int j = 0; j < n; j++) {
-        A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z1 / z2;
+        A[i * n + j] = trace * C[i * n + j] + z;
       }
+    }
+
+#pragma omp for
+    for (int i = 0; i < n; i++) {
+      A[i * n + i]++;
     }
   }
 
