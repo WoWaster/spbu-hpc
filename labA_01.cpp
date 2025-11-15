@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
 
   int n = -1;
   bool print_result = false;
+  bool is_debug = false;
 
   // Not the best argument parser, I know
   for (const auto &arg : args) {
@@ -93,6 +94,12 @@ int main(int argc, char *argv[]) {
       print_result = true;
       continue;
     }
+    if (arg == "--debug") {
+      is_debug = true;
+      print_result = true;
+      n = 2;
+      break;
+    }
     n = std::stoi(arg);
   }
 
@@ -103,11 +110,17 @@ int main(int argc, char *argv[]) {
   std::vector<double> x(n);
   std::vector<double> y(n);
 
-  generate(&B, random_e);
-  generate(&C, random_e);
-  generate(&x, random_e);
-  generate(&y, random_e);
-
+  if (is_debug) {
+    B.assign({1, 2, 3, 4});
+    C.assign({5, 6, 7, 8});
+    x.assign({2, 3});
+    y.assign({4, 5});
+  } else {
+    generate(&B, random_e);
+    generate(&C, random_e);
+    generate(&x, random_e);
+    generate(&y, random_e);
+  }
   std::cerr << "initialized values" << std::endl;
 
   std::chrono::system_clock::time_point start_time =
