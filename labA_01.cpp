@@ -26,39 +26,47 @@ std::vector<double> calculate(int n, std::vector<double> &B,
   // thus CE is a vector of row sums of C
   std::vector<double> CE(n);
 
-  for (int i = 0; i < n; i++) {
-    double tmp = 0.0;
-    for (int k = 0; k < n; k++) {
-      tmp += C[i * n + k];
-    }
-    CE[i] = tmp;
-  }
-
   double trace = 0.0;
-  for (int i = 0; i < n; i++) {
-    for (int k = 0; k < n; k++) {
-      trace += B[i * n + k] * CE[k];
-    }
-  }
-
   // Dot product of vector of ones (E) and x
   double Ex = std::accumulate(x.begin(), x.end(), 0.0);
   double z1 = 0.0;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      z1 += B[i * n + j] * Ex * y[i];
-    }
-  }
-
   double z2 = 0.0;
-  for (int i = 0; i < n; i++) {
-    z2 += x[i] * y[i];
-  }
 
-  double z = z1 / z2;
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z;
+#pragma omp parallel
+  {
+#pragma omp for
+    for (int i = 0; i < n; i++) {
+      double tmp = 0.0;
+      for (int k = 0; k < n; k++) {
+        tmp += C[i * n + k];
+      }
+      CE[i] = tmp;
+    }
+
+#pragma omp for reduction(+ : trace)
+    for (int i = 0; i < n; i++) {
+      for (int k = 0; k < n; k++) {
+        trace += B[i * n + k] * CE[k];
+      }
+    }
+
+#pragma omp for reduction(+ : z1)
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        z1 += B[i * n + j] * Ex * y[i];
+      }
+    }
+#pragma omp for reduction(+ : z2)
+    for (int i = 0; i < n; i++) {
+      z2 += x[i] * y[i];
+    }
+
+#pragma omp for collapse(2)
+    for (int i = 0; i < n; i++) {
+      // #pragma omp for
+      for (int j = 0; j < n; j++) {
+        A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z1 / z2;
+      }
     }
   }
 
@@ -99,6 +107,8 @@ int main(int argc, char *argv[]) {
   generate(&C, random_e);
   generate(&x, random_e);
   generate(&y, random_e);
+
+  std::cerr << "initialized values" << std::endl;
 
   std::chrono::system_clock::time_point start_time =
       std::chrono::system_clock::now();
