@@ -36,10 +36,13 @@ int main() {
   generate(&C, random_e);
   generate(&x, random_e);
   generate(&y, random_e);
+
   std::chrono::system_clock::time_point start_time =
       std::chrono::system_clock::now();
 
-  std::vector<double> CE(n); // single column of C*E
+  // single column of C*E, where E is a vector of ones
+  // thus CE is a vector of row sums of C
+  std::vector<double> CE(n);
 
   for (int i = 0; i < n; i++) {
     double tmp = 0.0;
@@ -50,42 +53,44 @@ int main() {
   }
 
   double trace = 0.0;
-  double z1 = 0.0;
-  double z2 = 0.0;
-  double Ex = std::accumulate(x.begin(), x.end(), 0.0);
   for (int i = 0; i < n; i++) {
     for (int k = 0; k < n; k++) {
       trace += B[i * n + k] * CE[k];
-
-      for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-          z1 += B[i * n + j] * Ex * y[i];
-        }
-      }
-
-      for (int i = 0; i < n; i++) {
-        z2 += x[i] * y[i];
-      }
     }
-
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z1 / z2;
-      }
-    }
-    std::chrono::milliseconds elapsed_milliseconds =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now() - start_time);
-
-    std::cerr << "elapsed " << elapsed_milliseconds.count() << "ms"
-              << std::endl;
-
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        std::cout << std::setprecision(10) << A[i * n + j] << " ";
-      }
-      std::cout << std::endl;
-    }
-    return 0;
   }
+
+  // Dot product of vector of ones (E) and x
+  double Ex = std::accumulate(x.begin(), x.end(), 0.0);
+  double z1 = 0.0;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      z1 += B[i * n + j] * Ex * y[i];
+    }
+  }
+
+  double z2 = 0.0;
+  for (int i = 0; i < n; i++) {
+    z2 += x[i] * y[i];
+  }
+
+  double z = z1 / z2;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z;
+    }
+  }
+  std::chrono::milliseconds elapsed_milliseconds =
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::system_clock::now() - start_time);
+
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      std::cout << std::setprecision(10) << A[i * n + j] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  std::cerr << "elapsed " << elapsed_milliseconds.count() << "ms" << std::endl;
+
+  return 0;
 }
