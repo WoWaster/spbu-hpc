@@ -17,13 +17,31 @@ void generate(std::vector<double> *v, double (*gen)()) {
   }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+
+  if (argc > 64)
+    throw std::runtime_error("too many input parameters!");
+
+  const std::vector<std::string> args(argv + 1, argv + argc);
+
+  int n = -1;
+  bool print_result = false;
+
+  // Not the best argument parser, I know
+  for (const auto &arg : args) {
+    if (arg == "--help") {
+      std::cout << "Usage: " << argv[0] << " [--help] [--print] n" << std::endl;
+      exit(EXIT_SUCCESS);
+    }
+    if (arg == "--print") {
+      print_result = true;
+      continue;
+    }
+    n = std::stoi(arg);
+  }
 
   re.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
-  int n;
-
-  std::cin >> n;
   std::vector<double> B(n * n);
 
   std::vector<double> C(n * n);
@@ -78,15 +96,18 @@ int main() {
       A[i * n + j] = trace * C[i * n + j] + (i == j ? 1 : 0) + z;
     }
   }
+
   std::chrono::milliseconds elapsed_milliseconds =
       std::chrono::duration_cast<std::chrono::milliseconds>(
           std::chrono::system_clock::now() - start_time);
 
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      std::cout << std::setprecision(10) << A[i * n + j] << " ";
+  if (print_result) {
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        std::cout << std::setprecision(10) << A[i * n + j] << " ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << std::endl;
   }
 
   std::cerr << "elapsed " << elapsed_milliseconds.count() << "ms" << std::endl;
