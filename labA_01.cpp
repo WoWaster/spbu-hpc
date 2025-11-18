@@ -17,16 +17,7 @@ void generate(std::vector<double> *v, double (*gen)()) {
   }
 }
 
-void calculate(int n, std::vector<double> &A, std::vector<double> &B,
-               std::vector<double> &C, std::vector<double> &x,
-               std::vector<double> &y, std::vector<double> &CE) {
-
-  double trace = 0.0;
-  // Dot product of vector of ones (E) and x
-  double Ex = std::accumulate(x.begin(), x.end(), 0.0);
-  double z1 = 0.0;
-  double z2 = 0.0;
-
+void compute_CE(int n, std::vector<double> &C, std::vector<double> &CE) {
 #pragma omp parallel for
   // single column of C*E, where E is a vector of ones
   // thus CE is a vector of row sums of C
@@ -37,6 +28,10 @@ void calculate(int n, std::vector<double> &A, std::vector<double> &B,
     }
     CE[i] = tmp;
   }
+}
+
+double compute_trace(int n, std::vector<double> &B, std::vector<double> &CE) {
+  double trace = 0.0;
 
 #pragma omp parallel for reduction(+ : trace)
   for (int i = 0; i < n; i++) {
@@ -45,6 +40,13 @@ void calculate(int n, std::vector<double> &A, std::vector<double> &B,
     }
   }
 
+  return trace;
+}
+
+double compute_z1(int n, std::vector<double> &B, double Ex,
+                  std::vector<double> &y) {
+  double z1 = 0.0;
+
 #pragma omp parallel for reduction(+ : z1)
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
@@ -52,14 +54,23 @@ void calculate(int n, std::vector<double> &A, std::vector<double> &B,
     }
   }
 
+  return z1;
+}
+
+double compute_z2(int n, std::vector<double> &x, std::vector<double> &y) {
+  double z2 = 0.0;
+
 #pragma omp parallel for reduction(+ : z2)
   for (int i = 0; i < n; i++) {
     z2 += x[i] * y[i];
   }
 
-  double z = z1 / z2;
+  return z2;
+}
 
-#pragma omp parallel for
+void compute_A(int n, std::vector<double> &A, std::vector<double> &C,
+               double trace, double z) {
+#pragma omp parallel for collapse(2)
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       A[i * n + j] = trace * C[i * n + j] + z;
@@ -70,6 +81,26 @@ void calculate(int n, std::vector<double> &A, std::vector<double> &B,
   for (int i = 0; i < n; i++) {
     A[i * n + i]++;
   }
+}
+
+void compute(int n, std::vector<double> &A, std::vector<double> &B,
+             std::vector<double> &C, std::vector<double> &x,
+             std::vector<double> &y, std::vector<double> &CE) {
+
+  // Dot product of vector of ones (E) and x
+  double Ex = std::accumulate(x.begin(), x.end(), 0.0);
+
+  compute_CE(n, C, CE);
+
+  double trace = compute_trace(n, B, CE);
+
+  double z1 = compute_z1(n, B, Ex, y);
+
+  double z2 = compute_z2(n, x, y);
+
+  double z = z1 / z2;
+
+  compute_A(n, A, C, trace, z);
 }
 
 int main(int argc, char *argv[]) {
@@ -127,10 +158,7 @@ int main(int argc, char *argv[]) {
   std::chrono::system_clock::time_point start_time =
       std::chrono::system_clock::now();
 
-  calculate(n, A, B, C, x, y, CE);
-  calculate(n, A, B, C, x, y, CE);
-  calculate(n, A, B, C, x, y, CE);
-  calculate(n, A, B, C, x, y, CE);
+  compute(n, A, B, C, x, y, CE);
 
   std::chrono::milliseconds elapsed_milliseconds =
       std::chrono::duration_cast<std::chrono::milliseconds>(
