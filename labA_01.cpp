@@ -17,14 +17,9 @@ void generate(std::vector<double> *v, double (*gen)()) {
   }
 }
 
-std::vector<double> calculate(int n, std::vector<double> &B,
-                              std::vector<double> &C, std::vector<double> &x,
-                              std::vector<double> &y) {
-  std::vector<double> A(n * n);
-
-  // single column of C*E, where E is a vector of ones
-  // thus CE is a vector of row sums of C
-  std::vector<double> CE(n);
+void calculate(int n, std::vector<double> &A, std::vector<double> &B,
+               std::vector<double> &C, std::vector<double> &x,
+               std::vector<double> &y, std::vector<double> &CE) {
 
   double trace = 0.0;
   // Dot product of vector of ones (E) and x
@@ -32,51 +27,49 @@ std::vector<double> calculate(int n, std::vector<double> &B,
   double z1 = 0.0;
   double z2 = 0.0;
 
-#pragma omp parallel
-  {
-#pragma omp for
-    for (int i = 0; i < n; i++) {
-      double tmp = 0.0;
-      for (int k = 0; k < n; k++) {
-        tmp += C[i * n + k];
-      }
-      CE[i] = tmp;
+#pragma omp parallel for
+  // single column of C*E, where E is a vector of ones
+  // thus CE is a vector of row sums of C
+  for (int i = 0; i < n; i++) {
+    double tmp = 0.0;
+    for (int k = 0; k < n; k++) {
+      tmp += C[i * n + k];
     }
+    CE[i] = tmp;
+  }
 
-#pragma omp for reduction(+ : trace)
-    for (int i = 0; i < n; i++) {
-      for (int k = 0; k < n; k++) {
-        trace += B[i * n + k] * CE[k];
-      }
-    }
-
-#pragma omp for reduction(+ : z1)
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        z1 += B[i * n + j] * Ex * y[i];
-      }
-    }
-#pragma omp for reduction(+ : z2)
-    for (int i = 0; i < n; i++) {
-      z2 += x[i] * y[i];
-    }
-
-    double z = z1 / z2;
-
-#pragma omp for collapse(2)
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < n; j++) {
-        A[i * n + j] = trace * C[i * n + j] + z;
-      }
-    }
-
-#pragma omp for
-    for (int i = 0; i < n; i++) {
-      A[i * n + i]++;
+#pragma omp parallel for reduction(+ : trace)
+  for (int i = 0; i < n; i++) {
+    for (int k = 0; k < n; k++) {
+      trace += B[i * n + k] * CE[k];
     }
   }
 
-  return A;
+#pragma omp parallel for reduction(+ : z1)
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      z1 += B[i * n + j] * Ex * y[i];
+    }
+  }
+
+#pragma omp parallel for reduction(+ : z2)
+  for (int i = 0; i < n; i++) {
+    z2 += x[i] * y[i];
+  }
+
+  double z = z1 / z2;
+
+#pragma omp parallel for
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      A[i * n + j] = trace * C[i * n + j] + z;
+    }
+  }
+
+#pragma omp parallel for
+  for (int i = 0; i < n; i++) {
+    A[i * n + i]++;
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -115,6 +108,8 @@ int main(int argc, char *argv[]) {
   std::vector<double> C(n * n);
   std::vector<double> x(n);
   std::vector<double> y(n);
+  std::vector<double> A(n * n);
+  std::vector<double> CE(n);
 
   if (is_debug) {
     B.assign({1, 2, 3, 4});
@@ -132,7 +127,10 @@ int main(int argc, char *argv[]) {
   std::chrono::system_clock::time_point start_time =
       std::chrono::system_clock::now();
 
-  std::vector<double> A = calculate(n, B, C, x, y);
+  calculate(n, A, B, C, x, y, CE);
+  calculate(n, A, B, C, x, y, CE);
+  calculate(n, A, B, C, x, y, CE);
+  calculate(n, A, B, C, x, y, CE);
 
   std::chrono::milliseconds elapsed_milliseconds =
       std::chrono::duration_cast<std::chrono::milliseconds>(
