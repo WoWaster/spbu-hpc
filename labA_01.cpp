@@ -35,9 +35,11 @@ double compute_trace(int n, std::vector<double> &B, std::vector<double> &CE) {
 
 #pragma omp parallel for reduction(+ : trace)
   for (int i = 0; i < n; i++) {
+    double tmp = 0.0;
     for (int k = 0; k < n; k++) {
-      trace += B[i * n + k] * CE[k];
+      tmp += B[i * n + k] * CE[k];
     }
+    trace += tmp;
   }
 
   return trace;
@@ -49,9 +51,11 @@ double compute_z1(int n, std::vector<double> &B, double Ex,
 
 #pragma omp parallel for reduction(+ : z1)
   for (int i = 0; i < n; i++) {
+    double tmp = 0.0;
     for (int j = 0; j < n; j++) {
-      z1 += B[i * n + j] * Ex * y[i];
+      tmp += B[i * n + j] * Ex * y[i];
     }
+    z1 += tmp;
   }
 
   return z1;
@@ -60,7 +64,6 @@ double compute_z1(int n, std::vector<double> &B, double Ex,
 double compute_z2(int n, std::vector<double> &x, std::vector<double> &y) {
   double z2 = 0.0;
 
-#pragma omp parallel for reduction(+ : z2)
   for (int i = 0; i < n; i++) {
     z2 += x[i] * y[i];
   }
@@ -70,14 +73,13 @@ double compute_z2(int n, std::vector<double> &x, std::vector<double> &y) {
 
 void compute_A(int n, std::vector<double> &A, std::vector<double> &C,
                double trace, double z) {
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       A[i * n + j] = trace * C[i * n + j] + z;
     }
   }
 
-#pragma omp parallel for
   for (int i = 0; i < n; i++) {
     A[i * n + i]++;
   }
