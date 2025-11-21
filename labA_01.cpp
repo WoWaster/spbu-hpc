@@ -155,7 +155,6 @@ int main(int argc, char *argv[]) {
     generate(&x, random_e);
     generate(&y, random_e);
   }
-  std::cerr << "initialized values" << std::endl;
 
   std::chrono::system_clock::time_point start_time =
       std::chrono::system_clock::now();
@@ -175,7 +174,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::cerr << "elapsed " << elapsed_milliseconds.count() << "ms" << std::endl;
+  std::cerr << elapsed_milliseconds.count() << std::endl;
 
   return 0;
 }
