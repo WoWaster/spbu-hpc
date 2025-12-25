@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::cerr << elapsed_milliseconds.count() << std::endl;
+  std::cout << elapsed_milliseconds.count() << std::endl;
 
   return 0;
 }
