@@ -5,9 +5,11 @@ project(spbu-hpc CXX)
 find_package(OpenMP COMPONENTS CXX)
 find_package(MPI COMPONENTS CXX)
 
+add_executable(labA_01 labA_01.cpp)
+target_compile_options(labA_01 PRIVATE -Wall -Wextra -pedantic -Werror -g)
+
 add_executable(labA_01_omp labA_01_omp.cpp)
-target_compile_options(labA_01_omp PRIVATE -Wall -Wextra -pedantic -Werror -fsanitize=address -fsanitize=leak -fsanitize=undefined -g)
-target_link_options(labA_01_omp PRIVATE -fsanitize=address -fsanitize=leak -fsanitize=undefined)
+target_compile_options(labA_01_omp PRIVATE -Wall -Wextra -pedantic -Werror -g)
 target_link_libraries(labA_01_omp PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(labA_01_mpi labA_01_mpi.cpp)
