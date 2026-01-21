@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
   int n = -1;
   bool print_result = false;
   bool is_debug = false;
+  bool is_fixed_seed = false;
 
   // Not the best argument parser, I know
   for (const auto &arg : args) {
@@ -132,10 +133,18 @@ int main(int argc, char *argv[]) {
       n = 2;
       break;
     }
+    if (arg == "--fixed-seed") {
+      is_fixed_seed = true;
+      continue;
+    }
     n = std::stoi(arg);
   }
 
-  re.seed(std::chrono::system_clock::now().time_since_epoch().count());
+  if (is_fixed_seed) {
+    re.seed(42); // NOLINT(cert-msc51-cpp)
+  } else {
+    re.seed(std::chrono::system_clock::now().time_since_epoch().count());
+  }
 
   std::vector<double> B(n * n);
   std::vector<double> C(n * n);

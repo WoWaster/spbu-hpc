@@ -105,6 +105,7 @@ int main(int argc, char *argv[]) {
   int n = -1;
   bool print_result = false;
   bool is_debug = false;
+  bool is_fixed_seed = false;
 
   for (const auto &arg : args) {
     if (arg == "--help") {
@@ -124,6 +125,10 @@ int main(int argc, char *argv[]) {
       print_result = true;
       n = 2;
       break;
+    }
+    if (arg == "--fixed-seed") {
+      is_fixed_seed = true;
+      continue;
     }
     n = std::stoi(arg);
   }
@@ -155,7 +160,11 @@ int main(int argc, char *argv[]) {
     C.resize(n * n);
     A.resize(n * n);
 
-    re.seed(std::chrono::system_clock::now().time_since_epoch().count());
+    if (is_fixed_seed) {
+      re.seed(42); // NOLINT(cert-msc51-cpp)
+    } else {
+      re.seed(std::chrono::system_clock::now().time_since_epoch().count());
+    }
 
     if (is_debug) {
       B.assign({1, 2, 3, 4});
